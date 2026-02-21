@@ -3,6 +3,7 @@ import type {
   AuthMeResponse,
   AuthResponse,
   LoginPayload,
+  UpdateMyProfilePayload,
   UserResponse,
 } from '../../../types/api';
 
@@ -39,5 +40,15 @@ export function logoutRequest(): Promise<{ message: string }> {
   return apiRequest<{ message: string }>({
     url: '/auth/logout',
     method: 'POST',
+  });
+}
+
+export function updateMyProfileRequest(
+  payload: UpdateMyProfilePayload,
+): Promise<UserResponse> {
+  return apiRequest<UserResponse>({
+    url: '/users/me',
+    method: 'PATCH',
+    data: payload,
   });
 }

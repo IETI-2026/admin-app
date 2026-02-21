@@ -50,6 +50,12 @@ export interface LoginPayload {
   password: string;
 }
 
+export interface UpdateMyProfilePayload {
+  fullName?: string;
+  phoneNumber?: string;
+  profilePhotoUrl?: string;
+}
+
 export interface UpdateUserPayload {
   email?: string;
   phoneNumber?: string;
