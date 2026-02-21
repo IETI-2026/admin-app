@@ -1,35 +1,42 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useMemo } from 'react';
+import { AuthCallbackPage } from './pages/AuthCallbackPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { LoginPage } from './pages/LoginPage';
+import { useAuthSession } from './modules/auth/hooks/useAuthSession';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const {
+    authState,
+    login,
+    logout,
+    loginWithGoogle,
+    completeOAuthLogin,
+    refreshProfile,
+  } = useAuthSession();
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+  const currentPath = useMemo(() => window.location.pathname, []);
+
+  if (currentPath === '/auth/callback') {
+    return (
+      <AuthCallbackPage
+        onComplete={completeOAuthLogin}
+        onRefreshProfile={refreshProfile}
+      />
+    );
+  }
+
+  if (!authState.isAuthenticated) {
+    return (
+      <LoginPage
+        isLoading={authState.isLoading}
+        error={authState.error}
+        onLogin={login}
+        onGoogleLogin={loginWithGoogle}
+      />
+    );
+  }
+
+  return <DashboardPage authState={authState} onLogout={logout} />;
 }
 
-export default App
+export default App;
