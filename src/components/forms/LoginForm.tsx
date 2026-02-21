@@ -51,7 +51,7 @@ export function LoginForm({ isLoading, onSubmit }: LoginFormProps) {
       <Input
         label="Correo electrónico"
         type="email"
-        placeholder="admin@cameya.com"
+        placeholder="juan.perez@cameyo.com"
         value={email}
         onChange={(event) => setEmail(event.target.value)}
         error={touched ? errors.email : undefined}

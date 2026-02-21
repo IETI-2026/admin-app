@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/button';
 import { Card } from '../../../components/ui/card';
+import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
+import type { AdminLayoutContextValue } from '../../../layouts/admin-layout.context';
 import { useUsersAdmin } from '../hooks/useUsersAdmin';
-import type { UserStatus } from '../../../types/api';
+import type { UserResponse, UserStatus } from '../../../types/api';
 
 const userStatusOptions: { value: UserStatus; label: string }[] = [
   { value: 'ACTIVE', label: 'Activo' },
@@ -21,9 +24,21 @@ function getStatusTone(status: UserStatus): 'success' | 'warning' | 'danger' | '
 }
 
 export function UsersAdminPage() {
+  const { authState } = useOutletContext<AdminLayoutContextValue>();
+  const isAdmin = authState.roles.includes('ADMIN');
   const [feedback, setFeedback] = useState<string | null>(null);
-  const { users, userStatusFilter, setUserStatusFilter, isLoading, error, toggleUserStatus, deleteUser } =
-    useUsersAdmin(true);
+  const [editingUser, setEditingUser] = useState<UserResponse | null>(null);
+  const [editForm, setEditForm] = useState({ fullName: '', email: '', phoneNumber: '' });
+  const {
+    users,
+    userStatusFilter,
+    setUserStatusFilter,
+    isLoading,
+    error,
+    updateUser,
+    toggleUserStatus,
+    deleteUser,
+  } = useUsersAdmin(true);
 
   const handleToggleStatus = async (
     userId: string,
@@ -40,6 +55,27 @@ export function UsersAdminPage() {
     setFeedback(hard ? 'Usuario eliminado permanentemente.' : 'Usuario eliminado (soft delete).');
   };
 
+  const handleEditStart = (user: UserResponse): void => {
+    setFeedback(null);
+    setEditingUser(user);
+    setEditForm({
+      fullName: user.fullName,
+      email: user.email ?? '',
+      phoneNumber: user.phoneNumber ?? '',
+    });
+  };
+
+  const handleEditSubmit = async (): Promise<void> => {
+    if (!editingUser) {
+      return;
+    }
+
+    setFeedback(null);
+    await updateUser(editingUser.id, editForm);
+    setFeedback('Usuario actualizado correctamente.');
+    setEditingUser(null);
+  };
+
   return (
     <div className="space-y-4">
       {feedback ? (
@@ -52,6 +88,46 @@ export function UsersAdminPage() {
         <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
           {error}
         </div>
+      ) : null}
+
+      {!isAdmin ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+          Tu rol puede consultar usuarios, pero solo un administrador puede editar o eliminar cuentas.
+        </div>
+      ) : null}
+
+      {isAdmin && editingUser ? (
+        <Card title="Editar usuario" subtitle={`ID: ${editingUser.id}`}>
+          <div className="grid gap-3 md:grid-cols-2">
+            <Input
+              label="Nombre completo"
+              value={editForm.fullName}
+              onChange={(event) =>
+                setEditForm((previous) => ({ ...previous, fullName: event.target.value }))
+              }
+            />
+            <Input
+              label="Correo"
+              value={editForm.email}
+              onChange={(event) =>
+                setEditForm((previous) => ({ ...previous, email: event.target.value }))
+              }
+            />
+            <Input
+              label="Teléfono"
+              value={editForm.phoneNumber}
+              onChange={(event) =>
+                setEditForm((previous) => ({ ...previous, phoneNumber: event.target.value }))
+              }
+            />
+          </div>
+          <div className="mt-4 flex gap-2">
+            <Button onClick={() => void handleEditSubmit()}>Guardar cambios</Button>
+            <Button variant="secondary" onClick={() => setEditingUser(null)}>
+              Cancelar
+            </Button>
+          </div>
+        </Card>
       ) : null}
 
       <Card
@@ -97,22 +173,31 @@ export function UsersAdminPage() {
                     </td>
                     <td className="rounded-r-lg px-2 py-2">
                       <div className="flex flex-wrap gap-2">
-                        <Button
-                          variant="secondary"
-                          onClick={() => void handleToggleStatus(user.id, user.status)}
-                        >
-                          {user.status === 'ACTIVE' ? 'Suspender' : 'Activar'}
-                        </Button>
-                        <Button variant="danger" onClick={() => void handleDelete(user.id)}>
-                          Soft delete
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="text-rose-700"
-                          onClick={() => void handleDelete(user.id, true)}
-                        >
-                          Hard delete
-                        </Button>
+                        {isAdmin ? (
+                          <>
+                            <Button variant="secondary" onClick={() => handleEditStart(user)}>
+                              Editar
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              onClick={() => void handleToggleStatus(user.id, user.status)}
+                            >
+                              {user.status === 'ACTIVE' ? 'Suspender' : 'Activar'}
+                            </Button>
+                            <Button variant="danger" onClick={() => void handleDelete(user.id)}>
+                              Soft delete
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              className="text-rose-700"
+                              onClick={() => void handleDelete(user.id, true)}
+                            >
+                              Hard delete
+                            </Button>
+                          </>
+                        ) : (
+                          <span className="text-xs text-slate-500">Sin permisos de edición</span>
+                        )}
                       </div>
                     </td>
                   </tr>

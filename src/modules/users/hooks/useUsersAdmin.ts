@@ -15,6 +15,7 @@ interface UseUsersAdminResult {
   isLoading: boolean;
   error: string | null;
   loadUsers: () => Promise<void>;
+  updateUser: (userId: string, payload: { fullName: string; email: string; phoneNumber: string }) => Promise<void>;
   toggleUserStatus: (userId: string, currentStatus: UserStatus) => Promise<void>;
   deleteUser: (userId: string, hard?: boolean) => Promise<void>;
 }
@@ -74,6 +75,30 @@ export function useUsersAdmin(active: boolean): UseUsersAdminResult {
     [loadUsers],
   );
 
+  const updateUser = useCallback(
+    async (
+      userId: string,
+      payload: { fullName: string; email: string; phoneNumber: string },
+    ): Promise<void> => {
+      setError(null);
+      try {
+        await updateUserRequest(userId, {
+          fullName: payload.fullName,
+          email: payload.email || undefined,
+          phoneNumber: payload.phoneNumber || undefined,
+        });
+        await loadUsers();
+      } catch (requestError) {
+        const message =
+          requestError instanceof HttpError
+            ? requestError.message
+            : 'No se pudo actualizar el usuario.';
+        setError(message);
+      }
+    },
+    [loadUsers],
+  );
+
   const deleteUser = useCallback(
     async (userId: string, hard = false): Promise<void> => {
       setError(null);
@@ -102,6 +127,7 @@ export function useUsersAdmin(active: boolean): UseUsersAdminResult {
     isLoading,
     error,
     loadUsers,
+    updateUser,
     toggleUserStatus,
     deleteUser,
   };

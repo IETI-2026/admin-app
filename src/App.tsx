@@ -3,6 +3,7 @@ import { AdminLayout } from './layouts/AdminLayout';
 import { ProfilePage } from './modules/auth/pages/ProfilePage';
 import { ProvidersAdminPage } from './modules/providers/pages/ProvidersAdminPage';
 import { ServiceRequestsAdminPage } from './modules/service-requests/pages/ServiceRequestsAdminPage';
+import { SystemSettingsPage } from './modules/settings/pages/SystemSettingsPage';
 import { UsersAdminPage } from './modules/users/pages/UsersAdminPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { DashboardHomePage } from './pages/DashboardHomePage';
@@ -66,6 +67,7 @@ function App() {
         <Route path="users" element={<UsersAdminPage />} />
         <Route path="technicians" element={<ProvidersAdminPage />} />
         <Route path="requests" element={<ServiceRequestsAdminPage />} />
+        <Route path="settings" element={<SystemSettingsPage />} />
         <Route path="profile" element={<ProfilePage onRefreshProfile={refreshProfile} />} />
       </Route>
 

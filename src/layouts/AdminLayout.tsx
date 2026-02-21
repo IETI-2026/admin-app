@@ -19,6 +19,7 @@ const sidebarItems: SidebarItem[] = [
   { label: 'Usuarios', path: '/dashboard/users' },
   { label: 'Técnicos', path: '/dashboard/technicians' },
   { label: 'Solicitudes', path: '/dashboard/requests' },
+  { label: 'Configuración', path: '/dashboard/settings' },
   { label: 'Mi Perfil', path: '/dashboard/profile' },
 ];
 
@@ -30,8 +31,7 @@ export function AdminLayout({ authState, onLogout }: AdminLayoutProps) {
     <div className="flex min-h-screen w-full bg-slate-100 text-slate-900">
       <aside className="hidden w-72 flex-col border-r border-slate-800 bg-slate-900 text-slate-100 lg:flex">
         <div className="border-b border-slate-800 px-6 py-5">
-          <h1 className="text-xl font-bold tracking-wide">Cameya Admin</h1>
-          <p className="mt-1 text-xs text-slate-400">Panel estilo Admin</p>
+          <h1 className="text-xl font-bold tracking-wide">Cameyo Admin</h1>
         </div>
 
         <nav className="flex-1 space-y-1 px-3 py-4">
@@ -57,7 +57,7 @@ export function AdminLayout({ authState, onLogout }: AdminLayoutProps) {
         </nav>
 
         <div className="border-t border-slate-800 px-4 py-4 text-xs text-slate-400">
-          Cameya Admin v1.0
+          Cameyo Admin v1.0
         </div>
       </aside>
 
@@ -111,7 +111,7 @@ export function AdminLayout({ authState, onLogout }: AdminLayoutProps) {
         </section>
 
         <footer className="border-t border-slate-200 bg-white px-4 py-3 text-xs text-slate-500 sm:px-6">
-          © {new Date().getFullYear()} Cameya Admin — Diseño tipo AdminLTE (sidebar + topbar + footer)
+          © {new Date().getFullYear()} Cameyo Admin
         </footer>
       </div>
     </div>

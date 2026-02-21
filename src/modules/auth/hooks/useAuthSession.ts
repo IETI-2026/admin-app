@@ -18,6 +18,7 @@ export interface AuthSessionState {
   isAuthenticated: boolean;
   isLoading: boolean;
   user: UserResponse | null;
+  roles: string[];
   error: string | null;
 }
 
@@ -25,6 +26,7 @@ const initialAuthState: AuthSessionState = {
   isAuthenticated: false,
   isLoading: false,
   user: null,
+  roles: [],
   error: null,
 };
 
@@ -54,6 +56,7 @@ export function useAuthSession() {
           isAuthenticated: false,
           isLoading: false,
           user: null,
+          roles: [],
           error: 'Acceso denegado. Se requiere rol ADMIN o MODERATOR.',
         });
         return;
@@ -66,6 +69,7 @@ export function useAuthSession() {
           isAuthenticated: false,
           isLoading: false,
           user: null,
+          roles: [],
           error: 'Tu cuenta no tiene permisos para el panel administrativo.',
         });
         return;
@@ -75,6 +79,7 @@ export function useAuthSession() {
         isAuthenticated: true,
         isLoading: false,
         user,
+        roles: me.roles,
         error: null,
       });
     } catch (requestError) {
@@ -88,6 +93,7 @@ export function useAuthSession() {
         isAuthenticated: false,
         isLoading: false,
         user: null,
+        roles: [],
         error: message,
       });
     }

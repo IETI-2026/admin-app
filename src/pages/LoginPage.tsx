@@ -21,7 +21,7 @@ export function LoginPage({
         <div className="hidden bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-700 p-10 text-white lg:flex lg:flex-col lg:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.25em] text-indigo-100">
-              Cameya Admin
+              Cameyo Admin
             </p>
             <h1 className="mt-4 text-3xl font-bold leading-tight">
               Administración central de usuarios y técnicos

@@ -81,7 +81,7 @@ export function ProfilePage({ onRefreshProfile }: ProfilePageProps) {
             label="Nombre completo"
             value={fullName}
             onChange={(event) => setFullName(event.target.value)}
-            placeholder="Administrador Cameya"
+            placeholder="Administrador Cameyo"
           />
 
           <Input
