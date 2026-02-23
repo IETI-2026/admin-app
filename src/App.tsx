@@ -1,35 +1,82 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { AdminLayout } from './layouts/AdminLayout';
+import { ProfilePage } from './modules/auth/pages/ProfilePage';
+import { ProvidersAdminPage } from './modules/providers/pages/ProvidersAdminPage';
+import { ServiceRequestsAdminPage } from './modules/service-requests/pages/ServiceRequestsAdminPage';
+import { SystemSettingsPage } from './modules/settings/pages/SystemSettingsPage';
+import { UsersAdminPage } from './modules/users/pages/UsersAdminPage';
+import { AuthCallbackPage } from './pages/AuthCallbackPage';
+import { DashboardHomePage } from './pages/DashboardHomePage';
+import { LoginPage } from './pages/LoginPage';
+import { useAuthSession } from './modules/auth/hooks/useAuthSession';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const {
+    authState,
+    login,
+    logout,
+    loginWithGoogle,
+    completeOAuthLogin,
+    refreshProfile,
+  } = useAuthSession();
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <Routes>
+      <Route
+        path="/"
+        element={<Navigate to={authState.isAuthenticated ? '/dashboard' : '/login'} replace />}
+      />
+
+      <Route
+        path="/auth/callback"
+        element={
+          <AuthCallbackPage
+            onComplete={completeOAuthLogin}
+            onRefreshProfile={refreshProfile}
+          />
+        }
+      />
+
+      <Route
+        path="/login"
+        element={
+          authState.isAuthenticated ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <LoginPage
+              isLoading={authState.isLoading}
+              error={authState.error}
+              onLogin={login}
+              onGoogleLogin={loginWithGoogle}
+            />
+          )
+        }
+      />
+
+      <Route
+        path="/dashboard"
+        element={
+          authState.isAuthenticated ? (
+            <AdminLayout authState={authState} onLogout={logout} />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      >
+        <Route index element={<DashboardHomePage />} />
+        <Route path="users" element={<UsersAdminPage />} />
+        <Route path="technicians" element={<ProvidersAdminPage />} />
+        <Route path="requests" element={<ServiceRequestsAdminPage />} />
+        <Route path="settings" element={<SystemSettingsPage />} />
+        <Route path="profile" element={<ProfilePage onRefreshProfile={refreshProfile} />} />
+      </Route>
+
+      <Route
+        path="*"
+        element={<Navigate to={authState.isAuthenticated ? '/dashboard' : '/login'} replace />}
+      />
+    </Routes>
+  );
 }
 
-export default App
+export default App;
