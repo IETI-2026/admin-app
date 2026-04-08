@@ -1,34 +1,34 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { AuthProvider } from './auth/AuthContext'
+import { AppLayout } from './components/AppLayout'
+import { ProtectedRoute } from './components/ProtectedRoute'
+import { CreateAdminPage } from './pages/CreateAdminPage'
+import { LoginPage } from './pages/LoginPage'
+import { NotFoundPage } from './pages/NotFoundPage'
+import { ProviderDocumentsPage } from './pages/ProviderDocumentsPage'
+import { ReviewQueuePage } from './pages/ReviewQueuePage'
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <AuthProvider>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+
+        <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'MODERATOR']} />}>
+          <Route element={<AppLayout />}>
+            <Route index element={<Navigate to="/review-queue" replace />} />
+            <Route path="/review-queue" element={<ReviewQueuePage />} />
+            <Route path="/providers/:providerUserId" element={<ProviderDocumentsPage />} />
+
+            <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+              <Route path="/admin/users/new" element={<CreateAdminPage />} />
+            </Route>
+          </Route>
+        </Route>
+
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </AuthProvider>
   )
 }
 
