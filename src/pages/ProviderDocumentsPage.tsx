@@ -1,31 +1,19 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 import { getErrorMessage } from '../api/error'
-import { decideDocument, getProviderDocuments, getProviderProfile } from '../api/reviewApi'
-import { RejectModal } from '../components/RejectModal'
+import { getPendingDocuments, viewAndConsumeDocument } from '../api/identityDocumentApi'
+import { getProviderProfile, verifyProvider } from '../api/reviewApi'
 import { StatusPill } from '../components/StatusPill'
-import { formatDate, formatDateTime } from '../lib/format'
-import type { DocumentDecision, ProviderDocument } from '../types/provider'
-
-interface DecisionRequest {
-  documentId: string
-  decision: DocumentDecision
-  reason?: string
-}
+import { formatDateTime } from '../lib/format'
+import type { PendingDocumentImage } from '../types/identityDocument'
 
 export const ProviderDocumentsPage = () => {
   const queryClient = useQueryClient()
   const { providerUserId } = useParams<{ providerUserId: string }>()
-  const [selectedDocument, setSelectedDocument] = useState<ProviderDocument | null>(null)
+  const [viewedDocument, setViewedDocument] = useState<PendingDocumentImage | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
-
-  const documentsQuery = useQuery({
-    queryKey: ['provider-documents', providerUserId],
-    queryFn: () => getProviderDocuments(providerUserId ?? ''),
-    enabled: Boolean(providerUserId),
-  })
 
   const providerProfileQuery = useQuery({
     queryKey: ['provider-profile', providerUserId],
@@ -33,40 +21,41 @@ export const ProviderDocumentsPage = () => {
     enabled: Boolean(providerUserId),
   })
 
-  const decisionMutation = useMutation({
-    mutationFn: async ({ documentId, decision, reason }: DecisionRequest) => {
-      if (!providerUserId) {
-        throw new Error('No encontramos el proveedor a revisar.')
-      }
-
-      await decideDocument(providerUserId, documentId, {
-        decision,
-        reason,
-      })
-    },
-    onSuccess: async (_, variables) => {
-      setSuccessMessage(
-        variables.decision === 'APPROVED'
-          ? 'Documento aprobado correctamente.'
-          : 'Documento rechazado correctamente.',
-      )
-      setActionError(null)
-      setSelectedDocument(null)
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['provider-documents', providerUserId] }),
-        queryClient.invalidateQueries({ queryKey: ['review-queue'] }),
-        queryClient.invalidateQueries({ queryKey: ['provider-profile', providerUserId] }),
-      ])
-    },
-    onError: (error) => {
-      setActionError(getErrorMessage(error))
-    },
+  const documentsQuery = useQuery({
+    queryKey: ['identity-documents-by-provider', providerUserId],
+    queryFn: () => getPendingDocuments(providerUserId),
+    enabled: Boolean(providerUserId),
   })
 
-  const providerVerificationStatus = useMemo(() => {
-    const profile = providerProfileQuery.data
-    return profile?.providerVerificationStatus ?? profile?.verificationStatus ?? profile?.status ?? 'N/D'
-  }, [providerProfileQuery.data])
+  const viewMutation = useMutation({
+    mutationFn: (id: string) => viewAndConsumeDocument(id),
+    onSuccess: (doc) => {
+      setViewedDocument(doc)
+      setActionError(null)
+      void queryClient.invalidateQueries({ queryKey: ['identity-documents-by-provider', providerUserId] })
+      void queryClient.invalidateQueries({ queryKey: ['identity-documents'] })
+    },
+    onError: (error) => setActionError(getErrorMessage(error)),
+  })
+
+  const verifyMutation = useMutation({
+    mutationFn: (action: 'APPROVE' | 'REJECT') =>
+      verifyProvider(providerUserId ?? '', action),
+    onSuccess: (_, action) => {
+      const msg = action === 'APPROVE' ? 'Técnico aprobado.' : 'Técnico rechazado.'
+      setSuccessMessage(msg)
+      setActionError(null)
+      setViewedDocument(null)
+      setTimeout(() => setSuccessMessage(null), 4000)
+      void queryClient.invalidateQueries({ queryKey: ['provider-profile', providerUserId] })
+      void queryClient.invalidateQueries({ queryKey: ['review-queue'] })
+    },
+    onError: (error) => setActionError(getErrorMessage(error)),
+  })
+
+  const profile = providerProfileQuery.data
+  const verificationStatus =
+    profile?.providerVerificationStatus ?? profile?.verificationStatus ?? profile?.status ?? 'N/D'
 
   if (!providerUserId) {
     return (
@@ -76,43 +65,17 @@ export const ProviderDocumentsPage = () => {
     )
   }
 
-  const handleApprove = async (documentId: string) => {
-    setSuccessMessage(null)
-    setActionError(null)
-
-    const confirmed = window.confirm('¿Confirmas la aprobación de este documento?')
-
-    if (!confirmed) {
-      return
-    }
-
-    await decisionMutation.mutateAsync({ documentId, decision: 'APPROVED' })
-  }
-
-  const handleReject = async (reason?: string) => {
-    if (!selectedDocument) {
-      return
-    }
-
-    setSuccessMessage(null)
-    setActionError(null)
-
-    await decisionMutation.mutateAsync({
-      documentId: selectedDocument.id,
-      decision: 'REJECTED',
-      reason,
-    })
-  }
-
   return (
     <section className="panel">
       <header className="panel-header">
         <div>
-          <h2>Detalle documental de proveedor</h2>
-          <p>Proveedor: {providerUserId}</p>
-          <p>
-            Estado final del proveedor: <StatusPill value={providerVerificationStatus} />
-          </p>
+          <h2>Detalle de verificación del proveedor</h2>
+          <p>ID: {providerUserId}</p>
+          {!providerProfileQuery.isLoading && (
+            <p>
+              Estado actual: <StatusPill value={verificationStatus} />
+            </p>
+          )}
         </div>
         <Link to="/review-queue" className="ghost-link">
           Volver a la bandeja
@@ -122,81 +85,143 @@ export const ProviderDocumentsPage = () => {
       {successMessage ? <article className="state-card success-state">{successMessage}</article> : null}
       {actionError ? <article className="state-card error-state">{actionError}</article> : null}
 
-      {documentsQuery.isLoading ? <article className="state-card">Cargando documentos...</article> : null}
-      {documentsQuery.isError ? (
-        <article className="state-card error-state">{getErrorMessage(documentsQuery.error)}</article>
-      ) : null}
+      {viewedDocument ? (
+        <div className="document-viewer">
+          <header className="document-viewer-header">
+            <div>
+              <h3>Documento de identidad</h3>
+              <p>{viewedDocument.fileName}</p>
+            </div>
+            <button type="button" className="ghost-button" onClick={() => setViewedDocument(null)}>
+              Cerrar
+            </button>
+          </header>
 
-      {!documentsQuery.isLoading && !documentsQuery.isError && (documentsQuery.data?.length ?? 0) === 0 ? (
-        <article className="state-card">El proveedor no tiene documentos para revisar.</article>
-      ) : null}
+          <div className="document-viewer-image">
+            {viewedDocument.mimeType === 'application/pdf' ? (
+              <iframe
+                title="Documento de identidad"
+                src={`data:application/pdf;base64,${viewedDocument.fileBase64}`}
+                width="100%"
+                height="600"
+              />
+            ) : (
+              <img
+                src={`data:${viewedDocument.mimeType};base64,${viewedDocument.fileBase64}`}
+                alt="Documento de identidad"
+                style={{ maxWidth: '100%', borderRadius: '8px' }}
+              />
+            )}
+          </div>
 
-      {!documentsQuery.isLoading && !documentsQuery.isError && (documentsQuery.data?.length ?? 0) > 0 ? (
-        <div className="document-grid">
-          {documentsQuery.data?.map((document) => (
-            <article key={document.id} className="document-card">
-              <header>
-                <h3>{document.documentType}</h3>
-                <StatusPill value={document.status} />
-              </header>
-
-              <dl>
-                <dt>ID</dt>
-                <dd>{document.id}</dd>
-
-                <dt>Hash</dt>
-                <dd>{document.documentHash}</dd>
-
-                <dt>Emitido</dt>
-                <dd>{formatDate(document.issuedAt)}</dd>
-
-                <dt>Expira</dt>
-                <dd>{formatDate(document.expiresAt)}</dd>
-
-                <dt>Verificado</dt>
-                <dd>{formatDateTime(document.verifiedAt)}</dd>
-
-                <dt>Rechazo</dt>
-                <dd>{document.rejectionReason ?? '-'}</dd>
-              </dl>
-
-              <div className="document-actions">
-                <a href={document.fileUrl} className="ghost-link" target="_blank" rel="noreferrer">
-                  Ver archivo
-                </a>
-
-                <button
-                  type="button"
-                  className="secondary-button"
-                  disabled={decisionMutation.isPending}
-                  onClick={() => {
-                    void handleApprove(document.id)
-                  }}
-                >
-                  Aprobar
-                </button>
-
-                <button
-                  type="button"
-                  className="danger-button"
-                  disabled={decisionMutation.isPending}
-                  onClick={() => setSelectedDocument(document)}
-                >
-                  Rechazar
-                </button>
-              </div>
-            </article>
-          ))}
+          <div className="document-viewer-actions">
+            <p className="hint-text">
+              Verifica el documento en la Registraduría o la Policía antes de decidir.
+            </p>
+            <div className="document-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={verifyMutation.isPending}
+                onClick={() => verifyMutation.mutate('APPROVE')}
+              >
+                Aprobar técnico
+              </button>
+              <button
+                type="button"
+                className="danger-button"
+                disabled={verifyMutation.isPending}
+                onClick={() => verifyMutation.mutate('REJECT')}
+              >
+                Rechazar técnico
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
 
-      <RejectModal
-        isOpen={Boolean(selectedDocument)}
-        documentType={selectedDocument?.documentType ?? 'Documento'}
-        isSubmitting={decisionMutation.isPending}
-        onCancel={() => setSelectedDocument(null)}
-        onConfirm={handleReject}
-      />
+      <div>
+        <h3>Documentos de identidad pendientes</h3>
+        {documentsQuery.isLoading ? (
+          <article className="state-card">Cargando documentos...</article>
+        ) : null}
+
+        {documentsQuery.isError ? (
+          <article className="state-card error-state">
+            {getErrorMessage(documentsQuery.error)}
+          </article>
+        ) : null}
+
+        {!documentsQuery.isLoading &&
+        !documentsQuery.isError &&
+        (documentsQuery.data?.length ?? 0) === 0 ? (
+          <article className="state-card">
+            Este proveedor no tiene documentos pendientes de revisión visual. Puedes aprobar o
+            rechazar directamente desde la bandeja.
+          </article>
+        ) : null}
+
+        {(documentsQuery.data?.length ?? 0) > 0 ? (
+          <div className="table-wrapper">
+            <table className="review-table">
+              <thead>
+                <tr>
+                  <th>Archivo</th>
+                  <th>Tipo</th>
+                  <th>Recibido</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {documentsQuery.data?.map((doc) => (
+                  <tr key={doc.id}>
+                    <td>{doc.fileName}</td>
+                    <td>
+                      <StatusPill value={doc.mimeType.includes('pdf') ? 'PDF' : 'IMAGEN'} />
+                    </td>
+                    <td>{formatDateTime(doc.receivedAt)}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        disabled={viewMutation.isPending}
+                        onClick={() => viewMutation.mutate(doc.id)}
+                      >
+                        Ver documento
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+      </div>
+
+      <div>
+        <h3>Decisión rápida</h3>
+        <p className="hint-text">
+          Si ya verificaste al técnico externamente, puedes tomar la decisión sin ver el documento.
+        </p>
+        <div className="document-actions" style={{ marginTop: '0.5rem' }}>
+          <button
+            type="button"
+            className="secondary-button"
+            disabled={verifyMutation.isPending}
+            onClick={() => verifyMutation.mutate('APPROVE')}
+          >
+            Aprobar técnico
+          </button>
+          <button
+            type="button"
+            className="danger-button"
+            disabled={verifyMutation.isPending}
+            onClick={() => verifyMutation.mutate('REJECT')}
+          >
+            Rechazar técnico
+          </button>
+        </div>
+      </div>
     </section>
   )
 }

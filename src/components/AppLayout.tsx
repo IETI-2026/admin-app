@@ -18,7 +18,7 @@ export const AppLayout = () => {
       <header className="shell-header">
         <div>
           <h1>Panel de Administración</h1>
-          <p>Revisión documental de proveedores</p>
+          <p>CameYo — Gestión y revisión de proveedores</p>
         </div>
 
         <div className="shell-user">
@@ -31,8 +31,14 @@ export const AppLayout = () => {
       </header>
 
       <nav className="shell-nav">
-        <NavLink to="/review-queue" className={getNavClassName}>
-          Bandeja de revisión
+        <NavLink to="/app-health" className={getNavClassName}>
+          Salud de la aplicación
+        </NavLink>
+        <NavLink to="/identity-documents" className={getNavClassName}>
+          Verificación de identidad
+        </NavLink>
+        <NavLink to="/skill-suggestions" className={getNavClassName}>
+          Sugerencias de habilidades
         </NavLink>
         <NavLink to="/admin/users/new" className={getNavClassName}>
           Crear admin/moderador

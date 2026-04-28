@@ -171,6 +171,13 @@ export const decideDocument = async (
   )
 }
 
+export const verifyProvider = async (
+  providerUserId: string,
+  action: 'APPROVE' | 'REJECT' | 'SUSPEND',
+): Promise<void> => {
+  await httpClient.patch(apiPath(`/users/${providerUserId}/verify-provider`), { action })
+}
+
 export const getProviderProfile = async (providerUserId: string): Promise<ProviderProfile | null> => {
   try {
     const response = await httpClient.get(apiPath(`/users/${providerUserId}/provider-profile`))
