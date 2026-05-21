@@ -18,7 +18,7 @@ export function getServiceRequestsRequest(
   });
 
   return apiRequest<ServiceRequestsListResponse>({
-    url: `/service-requests${params}`,
+    url: `/api/service-requests${params}`,
     method: 'GET',
   });
 }

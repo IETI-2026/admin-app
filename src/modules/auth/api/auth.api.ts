@@ -9,7 +9,7 @@ import type {
 
 export function loginRequest(payload: LoginPayload): Promise<AuthResponse> {
   return apiRequest<AuthResponse>({
-    url: '/auth/login',
+    url: '/api/auth/login',
     method: 'POST',
     data: payload,
   });
@@ -17,28 +17,28 @@ export function loginRequest(payload: LoginPayload): Promise<AuthResponse> {
 
 export function getGoogleAuthUrlRequest(): Promise<{ authUrl: string }> {
   return apiRequest<{ authUrl: string }>({
-    url: '/auth/google',
+    url: '/api/auth/google',
     method: 'GET',
   });
 }
 
 export function getAuthMeRequest(): Promise<AuthMeResponse> {
   return apiRequest<AuthMeResponse>({
-    url: '/auth/me',
+    url: '/api/auth/me',
     method: 'GET',
   });
 }
 
 export function getCurrentUserRequest(): Promise<UserResponse> {
   return apiRequest<UserResponse>({
-    url: '/users/me',
+    url: '/api/users/me',
     method: 'GET',
   });
 }
 
 export function logoutRequest(): Promise<{ message: string }> {
   return apiRequest<{ message: string }>({
-    url: '/auth/logout',
+    url: '/api/auth/logout',
     method: 'POST',
   });
 }
@@ -47,7 +47,7 @@ export function updateMyProfileRequest(
   payload: UpdateMyProfilePayload,
 ): Promise<UserResponse> {
   return apiRequest<UserResponse>({
-    url: '/users/me',
+    url: '/api/users/me',
     method: 'PATCH',
     data: payload,
   });

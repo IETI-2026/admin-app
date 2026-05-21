@@ -15,7 +15,7 @@ export function getUsersRequest(query: GetUsersQuery): Promise<UsersListResponse
   });
 
   return apiRequest<UsersListResponse>({
-    url: `/users${params}`,
+    url: `/api/users${params}`,
     method: 'GET',
   });
 }
@@ -25,7 +25,7 @@ export function updateUserRequest(
   payload: UpdateUserPayload,
 ): Promise<UserResponse> {
   return apiRequest<UserResponse>({
-    url: `/users/${userId}`,
+    url: `/api/users/${userId}`,
     method: 'PATCH',
     data: payload,
   });
@@ -33,14 +33,14 @@ export function updateUserRequest(
 
 export function softDeleteUserRequest(userId: string): Promise<void> {
   return apiRequest<void>({
-    url: `/users/${userId}`,
+    url: `/api/users/${userId}`,
     method: 'DELETE',
   });
 }
 
 export function hardDeleteUserRequest(userId: string): Promise<void> {
   return apiRequest<void>({
-    url: `/users/${userId}/hard`,
+    url: `/api/users/${userId}/hard`,
     method: 'DELETE',
   });
 }
