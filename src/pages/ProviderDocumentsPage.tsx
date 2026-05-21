@@ -29,11 +29,11 @@ export const ProviderDocumentsPage = () => {
 
   const viewMutation = useMutation({
     mutationFn: (id: string) => viewAndConsumeDocument(id),
-    onSuccess: (doc) => {
+    onSuccess: async (doc) => {
       setViewedDocument(doc)
       setActionError(null)
-      void queryClient.invalidateQueries({ queryKey: ['identity-documents-by-provider', providerUserId] })
-      void queryClient.invalidateQueries({ queryKey: ['identity-documents'] })
+      await queryClient.invalidateQueries({ queryKey: ['identity-documents-by-provider', providerUserId] })
+      await queryClient.invalidateQueries({ queryKey: ['identity-documents'] })
     },
     onError: (error) => setActionError(getErrorMessage(error)),
   })
@@ -41,14 +41,14 @@ export const ProviderDocumentsPage = () => {
   const verifyMutation = useMutation({
     mutationFn: (action: 'APPROVE' | 'REJECT') =>
       verifyProvider(providerUserId ?? '', action),
-    onSuccess: (_, action) => {
+    onSuccess: async (_, action) => {
       const msg = action === 'APPROVE' ? 'Técnico aprobado.' : 'Técnico rechazado.'
       setSuccessMessage(msg)
       setActionError(null)
       setViewedDocument(null)
       setTimeout(() => setSuccessMessage(null), 4000)
-      void queryClient.invalidateQueries({ queryKey: ['provider-profile', providerUserId] })
-      void queryClient.invalidateQueries({ queryKey: ['review-queue'] })
+      await queryClient.invalidateQueries({ queryKey: ['provider-profile', providerUserId] })
+      await queryClient.invalidateQueries({ queryKey: ['review-queue'] })
     },
     onError: (error) => setActionError(getErrorMessage(error)),
   })

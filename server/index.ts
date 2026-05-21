@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import cors from "cors";
 import express from "express";
-import path from "path";
+import path from "node:path";
 import { documentVerificationRouter } from "./routes/documentVerification";
 import { insightsRouter } from "./routes/insights";
 import { skillSuggestionsRouter } from "./routes/skillSuggestions";

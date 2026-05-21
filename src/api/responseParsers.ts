@@ -139,22 +139,34 @@ export const normalizeAuthUser = (payload: unknown): AuthUser | null => {
     return null
   }
 
+  let id: string | undefined
+  if (typeof source.id === 'string') {
+    id = source.id
+  } else if (typeof source.userId === 'string') {
+    id = source.userId
+  }
+
+  let fullName: string | undefined
+  if (typeof source.fullName === 'string') {
+    fullName = source.fullName
+  } else if (typeof source.name === 'string') {
+    fullName = source.name
+  }
+
   return {
-    id:
-      typeof source.id === 'string'
-        ? source.id
-        : typeof source.userId === 'string'
-          ? source.userId
-          : undefined,
-    fullName:
-      typeof source.fullName === 'string'
-        ? source.fullName
-        : typeof source.name === 'string'
-          ? source.name
-          : undefined,
+    id,
+    fullName,
     email: typeof source.email === 'string' ? source.email : undefined,
     role,
   }
+}
+
+const resolveItemsArray = (container: Record<string, unknown>): unknown[] => {
+  const keys = ['items', 'results', 'rows', 'data', 'content', 'records'] as const
+  for (const key of keys) {
+    if (Array.isArray(container[key])) return container[key] as unknown[]
+  }
+  return []
 }
 
 export const normalizePaginatedResponse = <T>(payload: unknown): PaginatedResult<T> => {
@@ -180,19 +192,7 @@ export const normalizePaginatedResponse = <T>(payload: unknown): PaginatedResult
 
   const container = isRecord(payload.data) ? payload.data : payload
 
-  const rawItems = Array.isArray(container.items)
-    ? container.items
-    : Array.isArray(container.results)
-      ? container.results
-      : Array.isArray(container.rows)
-        ? container.rows
-        : Array.isArray(container.data)
-          ? container.data
-          : Array.isArray(container.content)
-            ? container.content
-            : Array.isArray(container.records)
-              ? container.records
-          : []
+  const rawItems = resolveItemsArray(container)
 
   const page = toNumber(
     container.page,

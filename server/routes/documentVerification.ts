@@ -3,7 +3,7 @@ import { addDocument, getAndDeleteDocument, listDocuments } from '../store/docum
 
 export const documentVerificationRouter = Router()
 
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf']
+const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'])
 
 // POST / — receives document forwarded from main backend (server-to-server, no auth)
 documentVerificationRouter.post('/', (req, res) => {
@@ -19,7 +19,7 @@ documentVerificationRouter.post('/', (req, res) => {
     return
   }
 
-  if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
+  if (!ALLOWED_MIME_TYPES.has(mimeType)) {
     res.status(400).json({ message: 'mimeType not allowed' })
     return
   }

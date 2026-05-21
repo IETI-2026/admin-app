@@ -21,7 +21,9 @@ async function runKql(query: string): Promise<unknown[][]> {
 }
 
 function toDateStr(value: unknown): string {
-  return String(value).slice(0, 10);
+  if (typeof value === 'string') return value.slice(0, 10);
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return '';
 }
 
 router.get('/kpis', async (req, res) => {

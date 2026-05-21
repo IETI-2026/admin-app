@@ -76,7 +76,7 @@ httpClient.interceptors.response.use(
     const originalRequest = error.config as RetriableRequestConfig | undefined
 
     if (status !== 401 || !originalRequest) {
-      return Promise.reject(error)
+      throw error
     }
 
     const url = originalRequest.url ?? ''
@@ -84,7 +84,7 @@ httpClient.interceptors.response.use(
 
     if (originalRequest._retry || isAuthEndpoint) {
       unauthorizedHandler?.()
-      return Promise.reject(error)
+      throw error
     }
 
     originalRequest._retry = true
@@ -107,7 +107,7 @@ httpClient.interceptors.response.use(
 
     clearStoredAccessToken()
     unauthorizedHandler?.()
-    return Promise.reject(error)
+    throw error
   },
 )
 

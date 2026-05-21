@@ -5,7 +5,7 @@ const SESSION_STORAGE_KEY = import.meta.env.VITE_AUTH_STORAGE_KEY ?? 'cameyo_adm
 let inMemoryAccessToken: string | null = null
 let inMemoryRefreshToken: string | null = null
 
-const canUseStorage = () => typeof window !== 'undefined' && Boolean(window.localStorage)
+const canUseStorage = () => typeof globalThis.window !== 'undefined' && Boolean(globalThis.localStorage)
 
 export const getStoredAccessToken = (): string | null => {
   if (inMemoryAccessToken) {
@@ -16,7 +16,7 @@ export const getStoredAccessToken = (): string | null => {
     return null
   }
 
-  const rawSession = window.localStorage.getItem(SESSION_STORAGE_KEY)
+  const rawSession = globalThis.localStorage.getItem(SESSION_STORAGE_KEY)
 
   if (!rawSession) {
     return null
@@ -52,7 +52,7 @@ export const setStoredSession = (session: StoredSession): void => {
     return
   }
 
-  window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session))
+  globalThis.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session))
 }
 
 export const setStoredAccessToken = (token: string): void => {
@@ -70,5 +70,5 @@ export const clearStoredAccessToken = (): void => {
     return
   }
 
-  window.localStorage.removeItem(SESSION_STORAGE_KEY)
+  globalThis.localStorage.removeItem(SESSION_STORAGE_KEY)
 }

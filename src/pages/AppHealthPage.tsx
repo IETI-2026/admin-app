@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import {
   ArcElement,
   BarElement,
@@ -46,16 +46,28 @@ const PAGE_COLORS = [
   'rgba(99, 102, 241, 0.85)',
 ];
 
+function getErrorRateAccent(rate: number): string {
+  if (rate > 5) return 'text-rose-600';
+  if (rate > 1) return 'text-amber-600';
+  return 'text-emerald-600';
+}
+
+function getResponseTimeAccent(avgDuration: number): string {
+  if (avgDuration > 2000) return 'text-rose-600';
+  if (avgDuration > 800) return 'text-amber-600';
+  return 'text-slate-900';
+}
+
 function KpiCard({
   label,
   value,
   sub,
   accent,
 }: {
-  label: string;
-  value: string;
-  sub?: string;
-  accent?: string;
+  readonly label: string;
+  readonly value: string;
+  readonly sub?: string;
+  readonly accent?: string;
 }) {
   return (
     <section className="rounded-2xl border border-slate-200/80 bg-white/95 p-5 shadow-lg shadow-indigo-100/40 backdrop-blur-sm">
@@ -70,6 +82,28 @@ function EmptyChart() {
   return (
     <div className="flex h-40 items-center justify-center rounded-xl bg-slate-50 text-sm text-slate-400">
       Sin datos en el período seleccionado
+    </div>
+  );
+}
+
+function ChartCard({
+  title,
+  subtitle,
+  isEmpty,
+  isLoading,
+  children,
+}: {
+  readonly title: string;
+  readonly subtitle: string;
+  readonly isEmpty: boolean;
+  readonly isLoading: boolean;
+  readonly children: ReactNode;
+}) {
+  return (
+    <div className="min-w-0">
+      <Card title={title} subtitle={subtitle}>
+        {!isLoading && isEmpty ? <EmptyChart /> : <div className="h-36 w-full">{children}</div>}
+      </Card>
     </div>
   );
 }
@@ -90,7 +124,7 @@ export const AppHealthPage = () => {
       ...(kpis?.requestsPerDay.map((r) => r.date) ?? []),
       ...(kpis?.errorsPerDay.map((r) => r.date) ?? []),
     ]),
-  ].sort();
+  ].sort((a, b) => a.localeCompare(b));
 
   const requestsMap = new Map(kpis?.requestsPerDay.map((r) => [r.date, r.count]) ?? []);
   const errorsMap = new Map(kpis?.errorsPerDay.map((r) => [r.date, r.count]) ?? []);
@@ -163,6 +197,10 @@ export const AppHealthPage = () => {
     ],
   };
 
+  const handleRefetch = (): void => {
+    refetch().catch(() => undefined);
+  };
+
   return (
     <div className="w-full space-y-6 overflow-x-hidden">
       <div className="flex items-start justify-between gap-4">
@@ -189,7 +227,7 @@ export const AppHealthPage = () => {
             ))}
           </div>
           <button
-            onClick={() => void refetch()}
+            onClick={handleRefetch}
             disabled={isFetching}
             className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
           >
@@ -215,25 +253,13 @@ export const AppHealthPage = () => {
           label="Tasa de error (24h)"
           value={isLoading ? '...' : `${failureRate}%`}
           sub={`${kpis?.summary.failures ?? 0} solicitudes fallidas`}
-          accent={
-            Number(failureRate) > 5
-              ? 'text-rose-600'
-              : Number(failureRate) > 1
-                ? 'text-amber-600'
-                : 'text-emerald-600'
-          }
+          accent={getErrorRateAccent(Number(failureRate))}
         />
         <KpiCard
           label="Resp. promedio (24h)"
           value={isLoading ? '...' : `${kpis?.summary.avgDuration ?? 0} ms`}
           sub="Duración media de requests"
-          accent={
-            (kpis?.summary.avgDuration ?? 0) > 2000
-              ? 'text-rose-600'
-              : (kpis?.summary.avgDuration ?? 0) > 800
-                ? 'text-amber-600'
-                : 'text-slate-900'
-          }
+          accent={getResponseTimeAccent(kpis?.summary.avgDuration ?? 0)}
         />
         <KpiCard
           label={`Sesiones activas (${days}d)`}
@@ -243,65 +269,53 @@ export const AppHealthPage = () => {
       </div>
 
       <div className="grid max-w-3xl grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="min-w-0">
-          <Card title="Solicitudes de API" subtitle={`Últimos ${days} días`}>
-            {!isLoading && allDates.length === 0 ? (
-              <EmptyChart />
-            ) : (
-              <div className="h-36 w-full">
-                <Bar
-                  data={requestsChartData}
-                  options={{
-                    ...CHART_OPTIONS_BASE,
-                    plugins: { legend: { display: true, position: 'bottom' as const, labels: { boxWidth: 10, font: { size: 11 } } } },
-                  }}
-                />
-              </div>
-            )}
-          </Card>
-        </div>
+        <ChartCard
+          title="Solicitudes de API"
+          subtitle={`Últimos ${days} días`}
+          isEmpty={allDates.length === 0}
+          isLoading={isLoading}
+        >
+          <Bar
+            data={requestsChartData}
+            options={{
+              ...CHART_OPTIONS_BASE,
+              plugins: { legend: { display: true, position: 'bottom' as const, labels: { boxWidth: 10, font: { size: 11 } } } },
+            }}
+          />
+        </ChartCard>
 
-        <div className="min-w-0">
-          <Card title="Tiempo de respuesta" subtitle={`Últimos ${days} días (ms)`}>
-            {!isLoading && (kpis?.avgResponseTimePerDay.length ?? 0) === 0 ? (
-              <EmptyChart />
-            ) : (
-              <div className="h-36 w-full">
-                <Line
-                  data={responseTimeData}
-                  options={{
-                    ...CHART_OPTIONS_BASE,
-                    scales: { y: { beginAtZero: true } },
-                  }}
-                />
-              </div>
-            )}
-          </Card>
-        </div>
+        <ChartCard
+          title="Tiempo de respuesta"
+          subtitle={`Últimos ${days} días (ms)`}
+          isEmpty={(kpis?.avgResponseTimePerDay.length ?? 0) === 0}
+          isLoading={isLoading}
+        >
+          <Line
+            data={responseTimeData}
+            options={{
+              ...CHART_OPTIONS_BASE,
+              scales: { y: { beginAtZero: true } },
+            }}
+          />
+        </ChartCard>
 
-        <div className="min-w-0">
-          <Card title="Sesiones activas" subtitle={`Últimos ${days} días`}>
-            {!isLoading && (kpis?.activeSessionsPerDay.length ?? 0) === 0 ? (
-              <EmptyChart />
-            ) : (
-              <div className="h-36 w-full">
-                <Bar data={sessionsData} options={CHART_OPTIONS_BASE} />
-              </div>
-            )}
-          </Card>
-        </div>
+        <ChartCard
+          title="Sesiones activas"
+          subtitle={`Últimos ${days} días`}
+          isEmpty={(kpis?.activeSessionsPerDay.length ?? 0) === 0}
+          isLoading={isLoading}
+        >
+          <Bar data={sessionsData} options={CHART_OPTIONS_BASE} />
+        </ChartCard>
 
-        <div className="min-w-0">
-          <Card title="Excepciones" subtitle={`Últimos ${days} días`}>
-            {!isLoading && (kpis?.exceptionsPerDay.length ?? 0) === 0 ? (
-              <EmptyChart />
-            ) : (
-              <div className="h-36 w-full">
-                <Bar data={exceptionsData} options={CHART_OPTIONS_BASE} />
-              </div>
-            )}
-          </Card>
-        </div>
+        <ChartCard
+          title="Excepciones"
+          subtitle={`Últimos ${days} días`}
+          isEmpty={(kpis?.exceptionsPerDay.length ?? 0) === 0}
+          isLoading={isLoading}
+        >
+          <Bar data={exceptionsData} options={CHART_OPTIONS_BASE} />
+        </ChartCard>
       </div>
 
       {(kpis?.topPages.length ?? 0) > 0 ? (
