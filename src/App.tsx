@@ -1,82 +1,41 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
-import { AdminLayout } from './layouts/AdminLayout';
-import { ProfilePage } from './modules/auth/pages/ProfilePage';
-import { ProvidersAdminPage } from './modules/providers/pages/ProvidersAdminPage';
-import { ServiceRequestsAdminPage } from './modules/service-requests/pages/ServiceRequestsAdminPage';
-import { SystemSettingsPage } from './modules/settings/pages/SystemSettingsPage';
-import { UsersAdminPage } from './modules/users/pages/UsersAdminPage';
-import { AuthCallbackPage } from './pages/AuthCallbackPage';
-import { DashboardHomePage } from './pages/DashboardHomePage';
-import { LoginPage } from './pages/LoginPage';
-import { useAuthSession } from './modules/auth/hooks/useAuthSession';
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { AuthProvider } from './auth/AuthContext'
+import { AppLayout } from './components/AppLayout'
+import { ProtectedRoute } from './components/ProtectedRoute'
+import { AppHealthPage } from './pages/AppHealthPage'
+import { CreateAdminPage } from './pages/CreateAdminPage'
+import { IdentityDocumentQueuePage } from './pages/IdentityDocumentQueuePage'
+import { LoginPage } from './pages/LoginPage'
+import { NotFoundPage } from './pages/NotFoundPage'
+import { ProviderDocumentsPage } from './pages/ProviderDocumentsPage'
+import { ReviewQueuePage } from './pages/ReviewQueuePage'
+import { SkillSuggestionsPage } from './pages/SkillSuggestionsPage'
 
 function App() {
-  const {
-    authState,
-    login,
-    logout,
-    loginWithGoogle,
-    completeOAuthLogin,
-    refreshProfile,
-  } = useAuthSession();
-
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={<Navigate to={authState.isAuthenticated ? '/dashboard' : '/login'} replace />}
-      />
+    <AuthProvider>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
 
-      <Route
-        path="/auth/callback"
-        element={
-          <AuthCallbackPage
-            onComplete={completeOAuthLogin}
-            onRefreshProfile={refreshProfile}
-          />
-        }
-      />
+        <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'MODERATOR']} />}>
+          <Route element={<AppLayout />}>
+            <Route index element={<Navigate to="/app-health" replace />} />
+            <Route path="/app-health" element={<AppHealthPage />} />
+            <Route path="/review-queue" element={<ReviewQueuePage />} />
+            <Route path="/providers/:providerUserId" element={<ProviderDocumentsPage />} />
+            <Route path="/skill-suggestions" element={<SkillSuggestionsPage />} />
+            <Route path="/identity-documents" element={<IdentityDocumentQueuePage />} />
 
-      <Route
-        path="/login"
-        element={
-          authState.isAuthenticated ? (
-            <Navigate to="/dashboard" replace />
-          ) : (
-            <LoginPage
-              isLoading={authState.isLoading}
-              error={authState.error}
-              onLogin={login}
-              onGoogleLogin={loginWithGoogle}
-            />
-          )
-        }
-      />
+            <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+              <Route path="/admin/users/new" element={<CreateAdminPage />} />
+            </Route>
+          </Route>
+        </Route>
 
-      <Route
-        path="/dashboard"
-        element={
-          authState.isAuthenticated ? (
-            <AdminLayout authState={authState} onLogout={logout} />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      >
-        <Route index element={<DashboardHomePage />} />
-        <Route path="users" element={<UsersAdminPage />} />
-        <Route path="technicians" element={<ProvidersAdminPage />} />
-        <Route path="requests" element={<ServiceRequestsAdminPage />} />
-        <Route path="settings" element={<SystemSettingsPage />} />
-        <Route path="profile" element={<ProfilePage onRefreshProfile={refreshProfile} />} />
-      </Route>
-
-      <Route
-        path="*"
-        element={<Navigate to={authState.isAuthenticated ? '/dashboard' : '/login'} replace />}
-      />
-    </Routes>
-  );
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </AuthProvider>
+  )
 }
 
 export default App;

@@ -1,79 +1,85 @@
-import { LoginForm } from '../components/forms/LoginForm';
-import { Button } from '../components/ui/button';
-import type { LoginPayload } from '../types/api';
+import { useState, type FormEvent } from 'react'
+import { Navigate, useNavigate } from 'react-router-dom'
+import { getErrorMessage } from '../api/error'
+import { useAuth } from '../auth/useAuth'
 
-interface LoginPageProps {
-  isLoading: boolean;
-  error: string | null;
-  onLogin: (payload: LoginPayload) => Promise<void>;
-  onGoogleLogin: () => Promise<void>;
-}
+export const LoginPage = () => {
+  const navigate = useNavigate()
+  const { login, isAuthenticated, isLoading, sessionNotice, dismissSessionNotice } = useAuth()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
-export function LoginPage({
-  isLoading,
-  error,
-  onLogin,
-  onGoogleLogin,
-}: LoginPageProps) {
+  if (!isLoading && isAuthenticated) {
+    return <Navigate to="/review-queue" replace />
+  }
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setError(null)
+
+    if (!email.trim() || !password.trim()) {
+      setError('Ingresa email y contraseña para continuar.')
+      return
+    }
+
+    setSubmitting(true)
+
+    try {
+      await login(email.trim(), password)
+      dismissSessionNotice()
+      navigate('/review-queue', { replace: true })
+    } catch (submitError) {
+      setError(getErrorMessage(submitError, 'No fue posible iniciar sesión.'))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-transparent px-4 py-10">
-      <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl border border-indigo-100 bg-white shadow-xl lg:grid-cols-2">
-        <div className="hidden bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-700 p-10 text-white lg:flex lg:flex-col lg:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-indigo-100">
-              Cameyo Admin
-            </p>
-            <h1 className="mt-4 text-3xl font-bold leading-tight">
-              Administración central de usuarios y técnicos
-            </h1>
-            <p className="mt-4 text-indigo-100">
-              Panel web para gestionar acceso, validación y seguimiento del sistema,
-              conectado al backend NestJS del proyecto.
-            </p>
+    <main className="auth-page">
+      <section className="auth-card">
+        <h1>Admin Access</h1>
+        <p>Ingresa con tu cuenta ADMIN o MODERATOR para gestionar la revisión documental.</p>
+
+        {sessionNotice ? (
+          <div className="alert alert-warning">
+            <span>{sessionNotice}</span>
+            <button type="button" onClick={dismissSessionNotice}>
+              Cerrar
+            </button>
           </div>
-          <p className="text-xs text-indigo-200">
-            Login seguro con correo/contraseña o Google OAuth.
-          </p>
-        </div>
+        ) : null}
 
-        <div className="p-8 sm:p-10">
-          <div className="mx-auto w-full max-w-md">
-            <h2 className="text-2xl font-bold text-slate-900">Iniciar sesión</h2>
-            <p className="mt-2 text-sm text-slate-500">
-              Usa una cuenta con rol ADMIN o MODERATOR.
-            </p>
+        {error ? <div className="alert alert-error">{error}</div> : null}
 
-            {error ? (
-              <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                {error}
-              </div>
-            ) : null}
+        <form onSubmit={handleSubmit} className="form-grid">
+          <label htmlFor="email">Correo</label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="admin@empresa.com"
+          />
 
-            <div className="mt-6">
-              <LoginForm isLoading={isLoading} onSubmit={onLogin} />
-            </div>
+          <label htmlFor="password">Contraseña</label>
+          <input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Tu contraseña"
+          />
 
-            <div className="my-5 flex items-center gap-3">
-              <div className="h-px flex-1 bg-slate-200" />
-              <span className="text-xs uppercase tracking-wide text-slate-400">
-                o continuar con
-              </span>
-              <div className="h-px flex-1 bg-slate-200" />
-            </div>
-
-            <Button
-              variant="secondary"
-              className="w-full"
-              isLoading={isLoading}
-              onClick={() => {
-                void onGoogleLogin();
-              }}
-            >
-              Google OAuth
-            </Button>
-          </div>
-        </div>
-      </div>
+          <button type="submit" className="primary-button" disabled={submitting || isLoading}>
+            {submitting ? 'Validando...' : 'Iniciar sesión'}
+          </button>
+        </form>
+      </section>
     </main>
-  );
+  )
 }

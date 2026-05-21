@@ -1,73 +1,78 @@
-# React + TypeScript + Vite
+# Admin App MVP
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Cliente web de administración para revisión documental de proveedores, con autenticación JWT y control por rol (`ADMIN`, `MODERATOR`).
 
-Currently, two official plugins are available:
+## Funcionalidad implementada
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Login de usuarios administrativos.
+- Validación de perfil con `GET /api/auth/me` y bloqueo por rol.
+- Bandeja de revisión documental con filtros por estado y paginación.
+- Detalle por proveedor con consulta de documentos.
+- Aprobación y rechazo de documentos (rechazo con motivo opcional).
+- Consulta opcional de estado final del proveedor (`provider-profile`).
+- Creación de cuentas `ADMIN` y `MODERATOR`.
+- Manejo centralizado de errores `401`, `403`, `404` y errores generales.
+- Manejo de sesión con token en memoria + fallback a `localStorage`.
+- Refresh de sesión opcional con `POST /api/auth/refresh`.
 
-## React Compiler
+## Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React 19 + TypeScript + Vite
+- React Router DOM
+- TanStack Query
+- Axios con interceptores
 
-## Expanding the ESLint configuration
+## Variables de entorno
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Crear un archivo `.env` basado en `.env.example`:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+VITE_API_BASE_URL=http://localhost:3000
+VITE_API_PREFIX=/api
+VITE_TENANT_ID=public
+VITE_AUTH_STORAGE_KEY=cameyo_admin_session
+VITE_REQUEST_TIMEOUT_MS=15000
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Ejecución local
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
+
+Build y validación:
+
+```bash
+npm run build
+npm run lint
+```
+
+## Rutas de la app
+
+- `/login`
+- `/review-queue`
+- `/providers/:providerUserId`
+- `/admin/users/new` (solo rol `ADMIN`)
+
+## Endpoints consumidos
+
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+- `GET /api/users/admin/provider-review-queue?page=0&limit=20&status=PENDING_REVIEW`
+- `GET /api/users/:providerUserId/provider-documents`
+- `PATCH /api/users/:providerUserId/provider-documents/:documentId/decision`
+- `POST /api/users/admin`
+- Opcionales:
+  - `POST /api/auth/refresh`
+  - `POST /api/auth/logout`
+  - `GET /api/users/:providerUserId/provider-profile`
+
+Headers enviados en todas las llamadas:
+
+- `Authorization: Bearer <token>`
+- `X-Tenant-ID: public` (configurable por `VITE_TENANT_ID`)
+
+## Nota sobre creación de administradores
+
+El formulario envía `passwordHash` como campo opcional, tal como está definido en el contrato actual. Si backend migra a `password` en texto plano para hash en servidor, se debe ajustar ese payload.
