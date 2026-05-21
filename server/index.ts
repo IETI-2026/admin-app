@@ -1,7 +1,9 @@
+import 'dotenv/config';
 import cors from "cors";
 import express from "express";
 import path from "path";
 import { documentVerificationRouter } from "./routes/documentVerification";
+import { insightsRouter } from "./routes/insights";
 import { skillSuggestionsRouter } from "./routes/skillSuggestions";
 
 const app = express();
@@ -14,6 +16,7 @@ app.use(express.json({ limit: "20mb" }));
 
 app.use("/admin-api/skill-suggestions", skillSuggestionsRouter);
 app.use("/admin-api/document-verification", documentVerificationRouter);
+app.use("/admin-api/insights", insightsRouter);
 
 if (process.env.NODE_ENV === "production") {
   const distPath = path.join(__dirname, "../dist");
