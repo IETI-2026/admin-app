@@ -8,7 +8,7 @@ export function getProviderProfileRequest(
   userId: string,
 ): Promise<ProviderProfileResponse> {
   return apiRequest<ProviderProfileResponse>({
-    url: `/users/${userId}/provider-profile`,
+    url: `/api/users/${userId}/provider-profile`,
     method: 'GET',
   });
 }
@@ -18,7 +18,7 @@ export function verifyProviderRequest(
   action: ProviderVerificationAction,
 ): Promise<ProviderProfileResponse> {
   return apiRequest<ProviderProfileResponse>({
-    url: `/users/${userId}/verify-provider`,
+    url: `/api/users/${userId}/verify-provider`,
     method: 'PATCH',
     data: { action },
   });
