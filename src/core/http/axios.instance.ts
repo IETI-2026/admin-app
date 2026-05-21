@@ -48,9 +48,12 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 
   try {
-    const response = await refreshClient.post<AuthResponse>('/auth/refresh', {
-      refreshToken: tokens.refreshToken,
-    });
+    const response = await refreshClient.post<AuthResponse>(
+      '/api/auth/refresh',
+      {
+        refreshToken: tokens.refreshToken,
+      },
+    );
 
     if (!response.data.accessToken || !response.data.refreshToken) {
       clearAuthTokens();

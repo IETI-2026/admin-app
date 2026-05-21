@@ -1,4 +1,5 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
+import { ENV } from '../config/env'
 import { apiPath } from '../lib/apiPath'
 import {
   clearStoredAccessToken,
@@ -13,7 +14,8 @@ interface RetriableRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
+// Única fuente de la URL del backend: VITE_API_BASE_URL (ver config/env.ts).
+const API_BASE_URL = ENV.apiBaseUrl
 const TENANT_ID = import.meta.env.VITE_TENANT_ID ?? 'public'
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_REQUEST_TIMEOUT_MS ?? 15000)
 
