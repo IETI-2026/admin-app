@@ -1,0 +1,23 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "functions": {
+    "server/index.ts": {
+      "runtime": "@vercel/node"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/admin-api/:path*",
+      "destination": "/server/index.ts"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://cameyo-backend-prod.greenwave-9fa525e0.eastus2.azurecontainerapps.io/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
